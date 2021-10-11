@@ -1,34 +1,34 @@
 import socket
 import threading
 
-username = input("Enter your uername: ")
+nombreUsuario = input("Ingresa un nombre de usuario: ")
 
 host = 'LocalHost'
 port = 55555
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect((host, port))
+cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+cliente.connect((host, port))
 
-def receive_messages():
+def recibir_mensaje():
     while True:
         try:
-            message = client.recv(1024).decode('utf-8')
-
-            if message == "@username":
-                client.send(username.encode("utf-8"))
+            mensaje = cliente.recv(1024).decode('utf-8')
+            if mensaje == "@username":
+                cliente.send(nombreUsuario.encode("utf-8"))
             else:
-                print(message)
+                print(mensaje)
         except:
             print("Error")
-            client.close
+            cliente.close
             break
-def write_messages():
+
+def escribir_mensaje():
     while True:
-        message = f"{username}: {input('')}"
-        client.send(message.encode('utf-8'))
+        mensaje = f"{nombreUsuario}: {input('')}"
+        cliente.send(mensaje.encode('utf-8'))
 
-receive_thread = threading.Thread(target = receive_messages)
-receive_thread.start()
+recibir_hilo = threading.Thread(target = recibir_mensaje)
+recibir_hilo.start()
 
-write_thread = threading.Thread(target = write_messages)
-write_thread.start()
+escribir_mensaje = threading.Thread(target = escribir_mensaje)
+escribir_mensaje.start()
