@@ -1,5 +1,6 @@
 import socket
 import threading
+from PIL import Image
 
 nombreUsuario = input("Ingresa un nombre de usuario: ")
 
