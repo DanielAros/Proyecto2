@@ -1,53 +1,19 @@
-import socket
-import threading
+from twisted.internet.protocol import DatagramProtocol
+from twisted.internet import reactor
 
-host = 'LocalHost'
-port = 55555
+class Server(DatagramProtocol):
+    print("Servidor listo\n")
+    def __init__(self):
+        self.clients = set()
 
-servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    def datagramReceived(self, datagram, addr):
+        datagram = datagram.decode("utf-8")
+        if datagram == "ready":
+            addresses = "\n".join([str(x) for x in self.clients])
 
-servidor.bind((host, port))
-servidor.listen()
-print("Sevidor esperando")
+            self.transport.write(addresses.encode('utf-8'), addr)
+            self.clients.add(addr)
 
-clientes = []
-nombreUsuarios = []
-
-def broadcast(message, _cliente):
-    for cliente in clientes:
-        if cliente != _cliente:
-            cliente.send(message)
-
-def manejar_mensajes(cliente):
-    while True:
-        try:
-            mensaje = cliente.recv(1024)
-            broadcast( mensaje, cliente)
-        except:
-            index = clientes.index(cliente)
-            nombreUsuario = nombreUsuarios[index]
-            broadcast(f"chat: {nombreUsuario} se ha desconectado".encode('utf-8'))
-            clientes.remove(cliente)
-            nombreUsuario.remove(nombreUsuario)
-            cliente.close()
-            break
-
-def recibir_conexiones():
-    while True:
-        cliente, address = servidor.accept()
-        cliente.send("@username".encode('utf-8'))
-        nombreUsuario = cliente.recv(1024).decode('utf-8')
-
-        clientes.append(cliente)
-        nombreUsuarios.append(nombreUsuario)
-
-        print(f"{nombreUsuario} esta conectado {str(address)}")
-
-        message = f"Chat: {nombreUsuario} se ha unido!".encode('utf-8')
-        broadcast(message, cliente)
-        cliente.send("Conectado".encode('utf-8'))
-        
-        thread = threading.Thread(target = manejar_mensajes, args = (cliente,))
-        thread.start()
-
-recibir_conexiones()
+if __name__ == '__main__':
+    reactor.listenUDP(9999, Server())
+    reactor.run()
