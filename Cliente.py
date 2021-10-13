@@ -1,35 +1,35 @@
-import socket
-import threading
-from PIL import Image
+from twisted.internet.protocol import DatagramProtocol
+from twisted.internet import reactor
+from random import randint
 
-nombreUsuario = input("Ingresa un nombre de usuario: ")
+class Client(DatagramProtocol):
+    def __init__(self, host, port):
+        if host == "localhost":
+            host = "192.168.1.252"
 
-host = 'LocalHost'
-port = 55555
+        self.id = host, port
+        self.address = None
+        self.server = '192.168.1.252', 9999
+        print("ID actual:", self.id)
 
-cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-cliente.connect((host, port))
+    def startProtocol(self):
+        self.transport.write("ready".encode("utf-8"), self.server)
 
-def recibir_mensaje():
-    while True:
-        try:
-            mensaje = cliente.recv(1024).decode('utf-8')
-            if mensaje == "@username":
-                cliente.send(nombreUsuario.encode("utf-8"))
-            else:
-                print(mensaje)
-        except:
-            print("Error")
-            cliente.close
-            break
+    def datagramReceived(self, datagram, addr):
+        datagram = datagram.decode('utf-8')
 
-def escribir_mensaje():
-    while True:
-        mensaje = f"{nombreUsuario}: {input('')}"
-        cliente.send(mensaje.encode('utf-8'))
+        if addr == self.server:
+            print("Seleccione un cliente\n", datagram)
+            self.address = input("Escriba el host:"), int(input("Escriba el puerto:"))
+            reactor.callInThread(self.send_message)
+        else:
+            print(addr, ":", datagram)
 
-recibir_hilo = threading.Thread(target = recibir_mensaje)
-recibir_hilo.start()
+    def send_message(self):
+        while True:
+            self.transport.write(input(":::").encode('utf-8'), self.address)
 
-escribir_mensaje = threading.Thread(target = escribir_mensaje)
-escribir_mensaje.start()
+if __name__ == '__main__':
+    port = randint(1000, 5000)
+    reactor.listenUDP(port, Client('localhost', port))
+    reactor.run()
