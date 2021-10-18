@@ -7,16 +7,15 @@ class Server(DatagramProtocol):
     def __init__(self):
         self.clients = set()
 
-
     def datagramReceived(self, datagram, addr):
-#Recibimos la direccion y el puerto del cliente
+        #Recibimos la direccion y el puerto del cliente
         datagram = datagram.decode("utf-8")
-        if datagram == "ready":
-            #Añadimos al cliente
-            addresses = "\n".join([str(x) for x in self.clients])
-
-            self.transport.write(addresses.encode('utf-8'), addr)
-            self.clients.add(addr)
+        #Añadimos al cliente
+        print(datagram)
+        addresses = "\n".join([str(x) for x in self.clients])
+        print(addresses)
+        self.transport.write(addresses.encode('utf-8'), addr)#Se envian los clientes disponibles
+        self.clients.add(datagram + ": " + str(addr))
 
 #Leer los puertos
 if __name__ == '__main__':

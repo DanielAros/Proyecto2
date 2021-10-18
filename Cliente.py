@@ -2,23 +2,24 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
 from random import randint
 
+usuario = input("Escriba su nombre de usuario: ")
 #iniciamos el cliente y mostramos su info
-class Client(DatagramProtocol):
+class Client(DatagramProtocol):    
     def __init__(self, host, port):
         if host == "localhost":
-            host = "192.168.1.252"
+            host = "127.0.0.1"
 #127.0.0.1
-        self.id = host, port
+        self.id = usuario, host, port
         self.address = None
-        self.server = '192.168.1.252', 9999
+        self.server = '127.0.0.1', 9999
         print("ID actual:", self.id)
 
     def startProtocol(self):
 #le mandamos nuestros datos al servidor
-        self.transport.write("ready".encode("utf-8"), self.server)
+        self.transport.write(usuario.encode("utf-8"), self.server)
 
     def datagramReceived(self, datagram, addr):
-#recibimos los clientes que ya estan conectados
+#recibimos la información
         datagram = datagram.decode('utf-8')
 #Nos conectamos con otro cliente        
         if addr == self.server:
@@ -27,6 +28,7 @@ class Client(DatagramProtocol):
 #Creamos un hilo para mandar mensajes
             reactor.callInThread(self.send_message)
         else:
+            #Se muestra el mensaje que fue recibido
             print(addr, ":", datagram)
 
 #Mandamos el mensaje por el chat
