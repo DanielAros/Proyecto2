@@ -3,81 +3,93 @@ import sys
 import threading
 from random import randint
 
-servidor = ('127.0.0.1', 55555)
+servidor = ('localhost', 55555)
 
 # connect to servidor
-print('Conectando con el servidor')
+print('')
+print('=========== Conectando con el servidor ===========')
+print('')
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+direccion = '127.0.0.1' #Esta dirección es quivalente a poner localhost
 puerto = randint(1000, 5000)
 
-
-direccion = '127.0.0.'
-direccion += str(randint(2,10))
-
-print(direccion)
-print(type(direccion))
+print('******** Tu dirección: "{}", '.format(direccion) + 'tu puerto: "{}" ********'.format(puerto))
 
 sock.bind((direccion, puerto))
+
+print('=========== Registrando con el servidor... ===========')
 
 sock.sendto(b'0', servidor)
 
 while True:
-    data = sock.recv(1024).decode()
+    data = sock.recv(128).decode()
 
-    if data.strip() == 'ready':
-        print('Registrando con el servidor, esperando')
+    if data.strip() == 'Hecho':
+        print('')
+        print('========= Registro correcto, esperando datos del otro Cliente... =========')
+        print('')
         break
 
 data = sock.recv(1024).decode()
-ip, sport, dport = data.split(' ') #S recibe la informacion del otro cliente
-sport = int(sport) #Recibimos el puerto del otro cliente
-dport = int(dport)
+dip, dport, = data.split(' ') #S recibe la informacion del otro cliente
+dport = int(dport) #Recibimos el puerto del otro cliente
 
-print("Sport")
-print(sport)
-print("dport")
-print(dport)
+print('Datos recibidos con éxito!')
+print('')
+print('Dirección de Destino: "{}"'.format(dip))
+print('Puerto de Destino: "{}"'.format(dport))
+print('')
 
-#myHostName = socket.gethostname()
+print('=========== Conectando... ===========')
+print('')
 
-#myIp = socket.gethostbyname(myHostName)
-#print("Mi ip {}".format(myIp))
+sock.sendto(b'0', (dip, dport)) #Enviamos un 0 para establecer la conexión
 
-print('\ngot peer')
-print('  ip:          {}'.format(ip))
-print('  source port: {}'.format(sport))
-print('  dest port:   {}\n'.format(dport))
+data = sock.recv(128)   #Recibimos el 0 del otro equipo para establecer la conexión
 
-# punch hole
-# equiv: echo 'punch hole' | nc -u -p 50001 x.x.x.x 50002
-print('Conectando')
+print('=========== Listo para intercambiar mensajes ===========')
+print('')
+print('Tip: Escribe "exit" para salir. Sin comillas')
+print('')
 
-#sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#sock.bind((direccion, puerto))
-sock.sendto(b'0', (ip, sport))
+detener_hilos = False   #boleano para matar los hilos inicializado en falso
 
-print('Listo para intercambiar mensajes\n')
-
-# listen for
-# equiv: nc -u -l 50001
-def listen():
-    #sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #sock.bind((direccion, sport))
-
+def escuchar():
     while True:
-        data = sock.recv(1024)
-        print('\rpeer: {}\n> '.format(data.decode()), end='')
+        data = sock.recv(1024)  #Recibimos el mensaje
 
-listener = threading.Thread(target=listen, daemon=True);
-listener.start()
+        global detener_hilos    #Leemos la variable global del boleano para matar los hilos
 
-# send messages
-# equiv: echo 'xxx' | nc -u -p 50002 x.x.x.x 50001
-#sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#sock.bind((ip, sport))
+        if(data.decode() == 'exit'):    #Si el mensaje recibido dice "exit"...
+            print('')
+            print('')
+            print('== El otro Cliente ha cerrado la conexión. Presiona "Enter" para salir ==')
+            detener_hilos = True    #Cambiamos el valor a True para matar los hilos
 
-while True:
-    msg = input('> ')
-    sock.sendto(msg.encode(), (ip, sport))
+        if(detener_hilos):  #Si el valor es True...
+            break   #Matamos este hilo
+
+        print('\rCliente: {}\nTú: > '.format(data.decode()), end='')    #Si no dice exit, ni el bool es True, entonces mostramos el mensaje
+
+def decir():
+    while True:
+        msg = input('Tú: > ')   #Leemos la consola
+        sock.sendto(msg.encode(), (dip, dport)) #Mandamos el mensaje al otro cliente
+
+        global detener_hilos    #Leemos la variable global del boleano para matar los hilos
+
+        if(msg == 'exit'):  #Si el mensaje que acabamos de mandar decía "exit..."
+            print('')
+            print('=========== Saliendo... ===========')
+            detener_hilos = True    #Cambiamos el valor a True para matar los hilos
+
+        if(detener_hilos):  #Si el valor es True...
+            break   ##Matamos este hilo
+
+escuchar = threading.Thread(target=escuchar, daemon=True)   #creamos el hilo para la función escuchar
+decir = threading.Thread(target=decir)  #creamos el hilo para la función decir
+
+escuchar.start()    #Iniciamos el hilo escuchar
+decir.start()   #Iniciamos el hilo decir
