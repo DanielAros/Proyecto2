@@ -1,24 +1,29 @@
-from twisted.internet.protocol import DatagramProtocol
-from twisted.internet import reactor
+import socket
 
-#iniciamos el servidor
-class Server(DatagramProtocol):
-    print("Servidor listo\n")
-    def __init__(self):
-        self.clients = set()
+known_port = 50002
 
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(('127.0.0.1', 55555))
 
-    def datagramReceived(self, datagram, addr):
-#Recibimos la direccion y el puerto del cliente
-        datagram = datagram.decode("utf-8")
-        if datagram == "ready":
-            #Añadimos al cliente
-            addresses = "\n".join([str(x) for x in self.clients])
+while True:
+    clients = []
 
-            self.transport.write(addresses.encode('utf-8'), addr)
-            self.clients.add(addr)
+    while True:
+        data, address = sock.recvfrom(128)
 
-#Leer los puertos
-if __name__ == '__main__':
-    reactor.listenUDP(9999, Server())
-    reactor.run()
+        print('connection from: {}'.format(address))
+        clients.append(address)
+
+        sock.sendto(b'ready', address)
+
+        if len(clients) == 2:
+            print('got 2 clients, sending details to each')
+            break
+
+    c1 = clients.pop()
+    c1_addr, c1_port = c1
+    c2 = clients.pop()
+    c2_addr, c2_port = c2
+
+    sock.sendto('{} {} {}'.format(c1_addr, c1_port, known_port).encode(), c2)
+    sock.sendto('{} {} {}'.format(c2_addr, c2_port, known_port).encode(), c1)
