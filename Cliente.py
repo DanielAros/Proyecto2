@@ -4,6 +4,8 @@ from random import randint
 
 servidor = ('localhost', 55555)
 
+miUsuario = input('Escribe tu usuario: > ')
+
 # connect to servidor
 print('')
 print('=========== Conectando con el servidor ===========')
@@ -44,13 +46,15 @@ print('')
 print('=========== Conectando... ===========')
 print('')
 
-sock.sendto(b'0', (dip, dport)) #Enviamos un 0 para establecer la conexión
+sock.sendto(miUsuario.encode(), (dip, dport)) #Enviamos el usuario para establecer la conexión
 
-data = sock.recv(128)   #Recibimos el 0 del otro equipo para establecer la conexión
+suUsuario = sock.recv(128).decode()   #Recibimos el usuario del otro equipo para establecer la conexión
 
 print('=========== Listo para intercambiar mensajes ===========')
 print('')
 print('Tip: Escribe "exit" para salir. Sin comillas')
+print('Tip: Escribe "NombreArchivo.extensión/envArch" para enviar un archivo. Sin comillas')
+print('ASEGURATE DE QUE ANTES SE ENCUENTRE EN LA CARPETA DE "ARCHIVOS"')
 print('')
 
 detener_hilos = False   #boleano para matar los hilos inicializado en falso
@@ -70,31 +74,38 @@ def escuchar():
         if(detener_hilos):  #Si el valor es True...
             break   #Matamos este hilo
         
-        if '.jpg' in data:
-            file = open('./images/imagenNueva.jpg', 'wb')
-            image_part = sock.recv(2048)
-            print("\nRecibiendo imagen")
-            while image_part:
-                file.write(image_part)
-                image_part = sock.recv(2048)
+        if '/envArch' in data:
+
+            nombreArchivo = data.split('/') #Leemos el mensaje y lo partimos en donde está la "/" para separar el nombre y extensión del comando en sí
+
+            file = open('./archivosR/' + nombreArchivo[0], 'wb')    #la posicion 0 de nombreArchivo contiene el nombre y extensión
+            file_part = sock.recv(1024)
+            print("\nRecibiendo archivo")
+            while file_part:
+                file.write(file_part)
+                file_part = sock.recv(1024)
             file.close()
-            print("Recibido completo\nTú: > ")
+            print("Archivo Recibido")
+            print(miUsuario + ': > ')
         else: 
-            print('\rCliente: {}\nTú: > '.format(data), end='')    #Si no dice exit, ni el bool es True, entonces mostramos el mensaje
+            print('\r' + suUsuario + ': {}\n'.format(data) + miUsuario + ': > ', end='')    #Si no dice exit, ni el bool es True, entonces mostramos el mensaje
        
 def decir():
     while True:
-        msg = input('Tú: > ')   #Leemos la consola
+        msg = input(miUsuario + ': > ')   #Leemos la consola
         
         sock.sendto(msg.encode(), (dip, dport)) #Mandamos el mensaje al otro cliente
         
-        if '.jpg' in msg:
-            file = open('./images/imgOriginal.jpg', 'rb')
-            image_data = file.read(2048)
-            while image_data:
-                sock.sendto(image_data, (dip, dport))
-                image_data = file.read(2048)
-            sock.sendto(''.encode(), (dip, dport))#Envia un mensaje vacio para salir del ciclo de recibido
+        if '/envArch' in msg:
+
+            nombreArchivo = msg.split('/')  #Leemos el mensaje y lo partimos en donde está la "/" para separar el nombre y extensión del comando en sí
+
+            file = open('./archivos/' + nombreArchivo[0], 'rb') #la posicion 0 de nombreArchivo contiene el nombre y extensión
+            file_data = file.read(1024)
+            while file_data:                           #Se podría implementar mejor con un Do-While y así se evita enviar el mensaje vacío
+                sock.sendto(file_data, (dip, dport))
+                file_data = file.read(1024)
+            sock.sendto(''.encode(), (dip, dport))  #Envia un mensaje vacío para salir del ciclo de recibir
             file.close()
 
         global detener_hilos    #Leemos la variable global del boleano para matar los hilos
