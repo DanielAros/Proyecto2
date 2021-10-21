@@ -1,5 +1,4 @@
 import socket
-import sys
 import threading
 from random import randint
 
@@ -58,11 +57,11 @@ detener_hilos = False   #boleano para matar los hilos inicializado en falso
 
 def escuchar():
     while True:
-        data = sock.recv(1024)  #Recibimos el mensaje
+        data = sock.recv(2048).decode()  #Recibimos el mensaje
 
         global detener_hilos    #Leemos la variable global del boleano para matar los hilos
 
-        if(data.decode() == 'exit'):    #Si el mensaje recibido dice "exit"...
+        if(data == 'exit'):    #Si el mensaje recibido dice "exit"...
             print('')
             print('')
             print('== El otro Cliente ha cerrado la conexión. Presiona "Enter" para salir ==')
@@ -70,13 +69,33 @@ def escuchar():
 
         if(detener_hilos):  #Si el valor es True...
             break   #Matamos este hilo
-
-        print('\rCliente: {}\nTú: > '.format(data.decode()), end='')    #Si no dice exit, ni el bool es True, entonces mostramos el mensaje
-
+        
+        if '.jpg' in data:
+            file = open('./images/imagenNueva.jpg', 'wb')
+            image_part = sock.recv(2048)
+            print("\nRecibiendo imagen")
+            while image_part:
+                file.write(image_part)
+                image_part = sock.recv(2048)
+            file.close()
+            print("Recibido completo\nTú: > ")
+        else: 
+            print('\rCliente: {}\nTú: > '.format(data), end='')    #Si no dice exit, ni el bool es True, entonces mostramos el mensaje
+       
 def decir():
     while True:
         msg = input('Tú: > ')   #Leemos la consola
+        
         sock.sendto(msg.encode(), (dip, dport)) #Mandamos el mensaje al otro cliente
+        
+        if '.jpg' in msg:
+            file = open('./images/imgOriginal.jpg', 'rb')
+            image_data = file.read(2048)
+            while image_data:
+                sock.sendto(image_data, (dip, dport))
+                image_data = file.read(2048)
+            sock.sendto(''.encode(), (dip, dport))#Envia un mensaje vacio para salir del ciclo de recibido
+            file.close()
 
         global detener_hilos    #Leemos la variable global del boleano para matar los hilos
 
