@@ -4,6 +4,7 @@ from random import randint
 
 servidor = ('localhost', 55555)
 
+print('')
 miUsuario = input('Escribe tu usuario: > ')
 
 # connect to servidor
@@ -22,7 +23,7 @@ sock.bind((direccion, puerto))
 
 print('=========== Registrando con el servidor... ===========')
 
-sock.sendto(b'0', servidor)
+sock.sendto(miUsuario.encode(), servidor)
 
 while True:
     data = sock.recv(128).decode()

@@ -14,7 +14,7 @@ print('')
 while True:
     data, address = sock.recvfrom(128)
 
-    print('Conexión desde: {}'.format(address))
+    print('Se ha conectado: "{}"'.format(data.decode()) + ' desde: {}.'.format(address))
     clients.append(address)
 
     sock.sendto(b'Hecho', address)
