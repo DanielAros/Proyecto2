@@ -79,11 +79,11 @@ def escuchar():
             nombreArchivo = data.split('/') #Leemos el mensaje y lo partimos en donde está la "/" para separar el nombre y extensión del comando en sí
 
             file = open('./archivosR/' + nombreArchivo[0], 'wb')    #la posicion 0 de nombreArchivo contiene el nombre y extensión
-            file_part = sock.recv(1024)
+            file_part = sock.recv(512)
             print("\nRecibiendo archivo")
             while file_part:
                 file.write(file_part)
-                file_part = sock.recv(1024)
+                file_part = sock.recv(512)
             file.close()
             print("Archivo Recibido")
             print(miUsuario + ': > ')
@@ -101,10 +101,10 @@ def decir():
             nombreArchivo = msg.split('/')  #Leemos el mensaje y lo partimos en donde está la "/" para separar el nombre y extensión del comando en sí
 
             file = open('./archivos/' + nombreArchivo[0], 'rb') #la posicion 0 de nombreArchivo contiene el nombre y extensión
-            file_data = file.read(1024)
+            file_data = file.read(512)
             while file_data:                           #Se podría implementar mejor con un Do-While y así se evita enviar el mensaje vacío
                 sock.sendto(file_data, (dip, dport))
-                file_data = file.read(1024)
+                file_data = file.read(512)
             sock.sendto(''.encode(), (dip, dport))  #Envia un mensaje vacío para salir del ciclo de recibir
             file.close()
 
